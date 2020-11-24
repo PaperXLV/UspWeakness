@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#include "usp.h"
+
 static constexpr auto USAGE =
   R"(Naval Fate.
 
