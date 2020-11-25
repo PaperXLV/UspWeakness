@@ -5,10 +5,15 @@
 
 namespace usp {
 
-bool VerifyUspWeakness(Matrix<int> usp, Permutation rho, Permutation sigma)
+/* Verifier using witnesses rho and sigma. 
+ * Checks the condition holds for each element in the USP.
+ * Returns true iff the permutations prove the usp is weak. 
+ */
+bool VerifyUspWeakness(usp::Usp usp, Permutation rho, Permutation sigma)
 {
   for (int i = 0; i < usp.rows(); ++i) {
-    if (usp.query(i, rho.assignment(i), sigma.assigment(i))) {
+    spdlog::debug("Query: ({},{},{}): {}", i, rho.assignment(i), sigma.assignment(i), usp.query(i, rho.assignment(i), sigma.assignment(i)));
+    if (usp.query(i, rho.assignment(i), sigma.assignment(i))) {
       return false;
     }
   }

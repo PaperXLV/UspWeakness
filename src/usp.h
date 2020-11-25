@@ -41,7 +41,6 @@ private:
 class Node
 {
 public:
-private:
   bool m_assigned{ false };
   bool m_value{ false };
   int m_decision_level{ -1 };
@@ -58,9 +57,11 @@ public:
   Permutation(int n);
 
   int assignment(int row);
+  void assign(unsigned int y, unsigned int x, bool value);
 
 private:
   Matrix<Node> m_data;
+  int m_size{ -1 };
 };
 
 /* Usp of size (n, k)
@@ -70,8 +71,8 @@ class Usp
 public:
   Usp(std::vector<int> data, unsigned int n, unsigned int k);
 
-  // Query a triple of rows to determine if they satisfy the USP condition
-  int query(unsigned int a, unsigned int b, unsigned int c) const;
+  // Query a triple of rows to determine if they satisfy the USP condition.
+  bool query(unsigned int a, unsigned int b, unsigned int c) const;
 
   int rows() const;
   int cols() const;

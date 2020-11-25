@@ -1,6 +1,11 @@
 #include "usp.h"
 
 #include <iostream>
+#include <string>
+#include <sstream>
+
+#include <spdlog/spdlog.h>
+
 
 namespace usp {
 
@@ -8,15 +13,21 @@ Usp::Usp(std::vector<int> data, unsigned int n, unsigned int k) : m_data(n, k, s
 {
   m_func.reserve(n * n * n);
 
-  std::cout << "Data: \n";
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < k; ++j) {
-      std::cout << m_data(i, j) << " ";
+  auto dataString = [this, n, k]() -> std::string {
+    std::stringstream ss;
+    ss << "Data: \n";
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < k; ++j) {
+        ss << m_data(i, j) << " ";
+      }
+      ss << "\n";
     }
-    std::cout << "\n";
-  }
+    return ss.str();
+  };
 
-  std::cout << "Computing Function:\n";
+
+  spdlog::debug(dataString());
+  spdlog::debug("Computing Function:");
 
   // Compute function
   for (unsigned int a = 0; a < n; ++a) {
@@ -28,13 +39,13 @@ Usp::Usp(std::vector<int> data, unsigned int n, unsigned int k) : m_data(n, k, s
             m_func.back() = true;
           }
         }
-        std::cout << "(" << a << ", " << b << ", " << c << "): " << m_func.back() << "\n";
+        spdlog::debug("({},{},{}): {}", a, b, c, m_func.back());
       }
     }
   }
 }
 
-int Usp::query(unsigned int a, unsigned int b, unsigned int c) const
+bool Usp::query(unsigned int a, unsigned int b, unsigned int c) const
 {
   return m_func.at((a * m_rows * m_rows) + (b * m_rows) + c);
 }
@@ -49,8 +60,27 @@ int Usp::cols() const
   return m_cols;
 }
 
-Permutation::Permutation(int n) : m_data(n, n)
+Permutation::Permutation(int n) : m_data(n, n), m_size(n)
 {}
 
+void Permutation::assign(unsigned int y, unsigned int x, bool value)
+{
+  Node &node = m_data(y, x);
+  node.m_assigned = true;
+  node.m_value = value;
+  // not messing with decision level yet
+}
+
+int Permutation::assignment(int row)
+{
+  for (unsigned int i = 0; i < m_size; ++i) {
+    if (const Node &node = m_data(row, i); node.m_value && node.m_assigned) {
+      return i;
+    }
+  }
+  // Failure, should not reach here
+  spdlog::error("Extracting assignment from permutation failed");
+  return -1;
+}
 
 }// namespace usp
