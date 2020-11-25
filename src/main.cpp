@@ -10,6 +10,7 @@
 
 #include "usp.h"
 #include "verifier.h"
+#include "basicsolver.h"
 
 static constexpr auto USAGE =
   R"(Usage: usp
@@ -47,9 +48,13 @@ int main(int argc, const char **argv)
   sigma.assign(1, 0, true);
   sigma.assign(1, 1, false);
 
+
   if (usp::VerifyUspWeakness(puzzle, rho, sigma)) {
     spdlog::info("Weak USP");
   } else {
     spdlog::info("Strong USP");
   }
+
+  // Attempt basic solver
+  auto solved = usp::BasicSolver(puzzle);
 }

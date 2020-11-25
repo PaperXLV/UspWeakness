@@ -16,8 +16,8 @@ Usp::Usp(std::vector<int> data, unsigned int n, unsigned int k) : m_data(n, k, s
   auto dataString = [this, n, k]() -> std::string {
     std::stringstream ss;
     ss << "Data: \n";
-    for (int i = 0; i < n; ++i) {
-      for (int j = 0; j < k; ++j) {
+    for (unsigned int i = 0; i < n; ++i) {
+      for (unsigned int j = 0; j < k; ++j) {
         ss << m_data(i, j) << " ";
       }
       ss << "\n";
@@ -65,15 +65,26 @@ Permutation::Permutation(int n) : m_data(n, n), m_size(n)
 
 void Permutation::assign(unsigned int y, unsigned int x, bool value)
 {
+  // Disable all others in row if setting something to true
+  if (value) {
+    for (int col = 0; col < m_size; ++col) {
+      if (static_cast<unsigned int>(col) != x) {
+        Node &node = m_data(y, col);
+        node.m_assigned = true;
+        node.m_value = false;
+      }
+    }
+  }
+
   Node &node = m_data(y, x);
   node.m_assigned = true;
   node.m_value = value;
   // not messing with decision level yet
 }
 
-int Permutation::assignment(int row)
+int Permutation::assignment(int row) const
 {
-  for (unsigned int i = 0; i < m_size; ++i) {
+  for (int i = 0; i < m_size; ++i) {
     if (const Node &node = m_data(row, i); node.m_value && node.m_assigned) {
       return i;
     }

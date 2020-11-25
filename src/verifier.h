@@ -9,7 +9,7 @@ namespace usp {
  * Checks the condition holds for each element in the USP.
  * Returns true iff the permutations prove the usp is weak. 
  */
-bool VerifyUspWeakness(usp::Usp usp, Permutation rho, Permutation sigma)
+bool VerifyUspWeakness(const usp::Usp &usp, const Permutation &rho, const Permutation &sigma)
 {
   for (int i = 0; i < usp.rows(); ++i) {
     spdlog::debug("Query: ({},{},{}): {}", i, rho.assignment(i), sigma.assignment(i), usp.query(i, rho.assignment(i), sigma.assignment(i)));

@@ -26,6 +26,11 @@ public:
     return m_data.at(y * m_cols + x);
   }
 
+  const T &operator()(size_t y, size_t x) const
+  {
+    return m_data.at(y * m_cols + x);
+  }
+
 private:
   std::vector<T> m_data;
   int m_rows{ 0 };
@@ -56,7 +61,7 @@ class Permutation
 public:
   Permutation(int n);
 
-  int assignment(int row);
+  int assignment(int row) const;
   void assign(unsigned int y, unsigned int x, bool value);
 
 private:

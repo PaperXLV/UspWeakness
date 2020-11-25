@@ -4,6 +4,7 @@
 
 #include "usp.h"
 #include "verifier.h"
+#include "basicsolver.h"
 
 TEST_CASE("USP and Permutation construction", "[usp]")
 {
@@ -63,4 +64,17 @@ TEST_CASE("USP Verifier failure on small strong puzzles", "[usp]")
   sigma.assign(1, 1, false);
 
   REQUIRE(!usp::VerifyUspWeakness(puzzle, rho, sigma));
+}
+
+TEST_CASE("Basic Solver works on small puzzles", "[solver]")
+{
+  usp::Usp weakPuzzle({ 2, 2, 2, 3 }, 2, 2);
+  usp::Usp strongPuzzle({ 1, 1, 2, 3 }, 2, 2);
+
+  auto solver = usp::BasicSolver(weakPuzzle);
+  auto solverStrong = usp::BasicSolver(strongPuzzle);
+  REQUIRE(solver.has_value());
+  REQUIRE(!solverStrong.has_value());
+  auto [rho, sigma] = solver.value();
+  REQUIRE(usp::VerifyUspWeakness(weakPuzzle, rho, sigma));
 }
