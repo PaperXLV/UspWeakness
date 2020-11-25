@@ -3,7 +3,6 @@
 
 #include <spdlog/spdlog.h>
 
-
 #include <docopt/docopt.h>
 
 #include <iostream>
