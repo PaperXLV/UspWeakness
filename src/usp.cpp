@@ -50,25 +50,25 @@ bool Usp::query(unsigned int a, unsigned int b, unsigned int c) const
   return m_func.at((a * m_rows * m_rows) + (b * m_rows) + c);
 }
 
-int Usp::rows() const
+unsigned int Usp::rows() const
 {
   return m_rows;
 }
 
-int Usp::cols() const
+unsigned int Usp::cols() const
 {
   return m_cols;
 }
 
-Permutation::Permutation(int n) : m_data(n, n), m_size(n)
+Permutation::Permutation(unsigned int n) : m_data(n, n), m_size(n)
 {}
 
 void Permutation::assign(unsigned int y, unsigned int x, bool value)
 {
   // Disable all others in row if setting something to true
   if (value) {
-    for (int col = 0; col < m_size; ++col) {
-      if (static_cast<unsigned int>(col) != x) {
+    for (unsigned int col = 0; col < m_size; ++col) {
+      if (col != x) {
         Node &node = m_data(y, col);
         node.m_assigned = true;
         node.m_value = false;
@@ -82,9 +82,9 @@ void Permutation::assign(unsigned int y, unsigned int x, bool value)
   // not messing with decision level yet
 }
 
-int Permutation::assignment(int row) const
+unsigned int Permutation::assignment(unsigned int row) const
 {
-  for (int i = 0; i < m_size; ++i) {
+  for (unsigned int i = 0; i < m_size; ++i) {
     if (const Node &node = m_data(row, i); node.m_value && node.m_assigned) {
       return i;
     }

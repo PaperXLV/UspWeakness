@@ -20,14 +20,14 @@ namespace usp {
 std::optional<std::pair<Permutation, Permutation>> BasicSolver(Usp puzzle)
 {
   // Generate the identity {0, ..., n}
-  auto generateRange = [&puzzle]() -> std::vector<int> {
-    std::vector<int> range(puzzle.rows());
+  auto generateRange = [&puzzle]() -> std::vector<unsigned int> {
+    std::vector<unsigned int> range(puzzle.rows());
     std::iota(range.begin(), range.end(), 0);
     return range;
   };
 
   // O(n) algorithm to check if a vector is the identity {0, ..., n}
-  auto isIdentity = [](const std::vector<int> &range) {
+  auto isIdentity = [](const std::vector<unsigned int> &range) {
     auto it = range.begin();
     while (it != range.end()) {
       if (*it != std::distance(range.begin(), it)) {
@@ -41,17 +41,17 @@ std::optional<std::pair<Permutation, Permutation>> BasicSolver(Usp puzzle)
   Permutation rho(puzzle.rows());
   Permutation sigma(puzzle.rows());
 
-  std::vector<int> range1 = generateRange();
+  std::vector<unsigned int> range1 = generateRange();
   do {
-    std::vector<int> range2 = generateRange();
-    for (int i = 0; i < puzzle.rows(); ++i) {
+    std::vector<unsigned int> range2 = generateRange();
+    for (unsigned int i = 0; i < puzzle.rows(); ++i) {
 
       rho.assign(i, range1[i], true);
     }
     do {
       // Check at least one string is not the identity
       if (!isIdentity(range1) || !isIdentity(range2)) {
-        for (int i = 0; i < puzzle.rows(); ++i) {
+        for (unsigned int i = 0; i < puzzle.rows(); ++i) {
           sigma.assign(i, range2[i], true);
         }
         if (VerifyUspWeakness(puzzle, rho, sigma)) {

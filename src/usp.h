@@ -21,20 +21,20 @@ public:
   Matrix<T>(unsigned int n, unsigned int k, std::vector<T> data) : m_data(std::move(data)), m_rows(n), m_cols(k)
   {}
 
-  T &operator()(size_t y, size_t x)
+  T &operator()(unsigned int y, unsigned int x)
   {
     return m_data.at(y * m_cols + x);
   }
 
-  const T &operator()(size_t y, size_t x) const
+  const T &operator()(unsigned int y, unsigned int x) const
   {
     return m_data.at(y * m_cols + x);
   }
 
 private:
   std::vector<T> m_data;
-  int m_rows{ 0 };
-  int m_cols{ 0 };
+  unsigned int m_rows{ 0 };
+  unsigned int m_cols{ 0 };
 };
 
 
@@ -59,14 +59,14 @@ public:
 class Permutation
 {
 public:
-  Permutation(int n);
+  Permutation(unsigned int n);
 
-  int assignment(int row) const;
+  unsigned int assignment(unsigned int row) const;
   void assign(unsigned int y, unsigned int x, bool value);
 
 private:
   Matrix<Node> m_data;
-  int m_size{ -1 };
+  unsigned int m_size{ 0 };
 };
 
 /* Usp of size (n, k)
@@ -79,14 +79,14 @@ public:
   // Query a triple of rows to determine if they satisfy the USP condition.
   bool query(unsigned int a, unsigned int b, unsigned int c) const;
 
-  int rows() const;
-  int cols() const;
+  unsigned int rows() const;
+  unsigned int cols() const;
 
 private:
   Matrix<int> m_data;
   std::vector<bool> m_func;
-  int m_rows{ 0 };
-  int m_cols{ 0 };
+  unsigned int m_rows{ 0 };
+  unsigned int m_cols{ 0 };
 };
 
 
