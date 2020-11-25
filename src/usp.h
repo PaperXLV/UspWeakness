@@ -18,7 +18,7 @@ public:
     m_data = std::vector<T>(n * k, T());
   }
 
-  Matrix<T>(unsigned int n, unsigned int k, std::vector<T> data) : m_rows(n), m_cols(k), m_data(data)
+  Matrix<T>(unsigned int n, unsigned int k, std::vector<T> data) : m_data(std::move(data)), m_rows(n), m_cols(k)
   {}
 
   T &operator()(size_t y, size_t x)
