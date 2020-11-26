@@ -17,7 +17,7 @@ namespace usp {
  * Returns a pair of permutations if one has been found 
  * which verifies the USP as weak.
  */
-std::optional<std::pair<Permutation, Permutation>> BasicSolver(Usp puzzle)
+std::optional<std::pair<Permutation, Permutation>> BasicSolver(const Usp &puzzle)
 {
   // Generate the identity {0, ..., n}
   auto generateRange = [&puzzle]() -> std::vector<unsigned int> {

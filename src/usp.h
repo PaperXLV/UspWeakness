@@ -1,6 +1,7 @@
 #ifndef USP_H
 #define USP_H
 
+#include <optional>
 #include <vector>
 
 namespace usp {
@@ -61,8 +62,22 @@ class Permutation
 public:
   Permutation(unsigned int n);
 
-  unsigned int assignment(unsigned int row) const;
-  void assign(unsigned int y, unsigned int x, bool value);
+  // Check if the current assignment is the identity {0, ..., n}
+  bool checkIdentity() const;
+  // Check if any row or column is unable to have an assignment
+  bool checkContradiction() const;
+  // Return the next row to assign
+  std::optional<unsigned int> nextAssignment() const;
+  // Return which column is assigned by row
+  std::optional<unsigned int> assignment(unsigned int row) const;
+  // Return all possible assignments by row
+  std::vector<unsigned int> possibleAssignments(unsigned int row) const;
+  // Assign element (y, x) to value.
+  void assign(unsigned int y, unsigned int x, bool value, int decision_level = -1);
+  // Assigns element (y, x) to true. Performs simple unit propagation.
+  void assignPropagate(unsigned int y, unsigned int x, int decision_level);
+  // Undo all propagation that happened at decision_level or below
+  void undoPropagation(int decision_level);
 
 private:
   Matrix<Node> m_data;

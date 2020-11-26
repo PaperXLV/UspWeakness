@@ -10,6 +10,7 @@
 #include "usp.h"
 #include "verifier.h"
 #include "basicsolver.h"
+#include "dpllsolver.h"
 
 static constexpr auto USAGE =
   R"(Usage: usp
@@ -32,7 +33,7 @@ int main(int argc, const char **argv)
   spdlog::debug("Debug Logging ON");
 
   usp::Usp puzzle({ 2, 2, 2, 3 }, 2, 2);
-
+  /*
   usp::Permutation rho(2);
   usp::Permutation sigma(2);
 
@@ -53,7 +54,8 @@ int main(int argc, const char **argv)
   } else {
     spdlog::info("Strong USP");
   }
+  */
 
-  // Attempt basic solver
-  auto solved = usp::BasicSolver(puzzle);
+  // Attempt dpll solver
+  auto solved = usp::DpllSolver(puzzle);
 }

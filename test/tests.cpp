@@ -5,6 +5,7 @@
 #include "usp.h"
 #include "verifier.h"
 #include "basicsolver.h"
+#include "dpllsolver.h"
 
 TEST_CASE("USP and Permutation construction", "[usp]")
 {
@@ -20,8 +21,8 @@ TEST_CASE("USP and Permutation construction", "[usp]")
 
   REQUIRE(!puzzle.query(0, 0, 0));
   REQUIRE(puzzle.query(0, 0, 1));
-  REQUIRE(rho.assignment(0) == 1);
-  REQUIRE(rho.assignment(1) == 0);
+  REQUIRE(rho.assignment(0).value() == 1);
+  REQUIRE(rho.assignment(1).value() == 0);
 }
 
 TEST_CASE("USP Verifier on small weak puzzles", "[usp]")
@@ -78,3 +79,18 @@ TEST_CASE("Basic Solver works on small puzzles", "[solver]")
   auto [rho, sigma] = solver.value();
   REQUIRE(usp::VerifyUspWeakness(weakPuzzle, rho, sigma));
 }
+
+/*
+TEST_CASE("DPLL Solver works on small puzzles", "[solver]")
+{
+  usp::Usp weakPuzzle({ 2, 2, 2, 3 }, 2, 2);
+  usp::Usp strongPuzzle({ 1, 1, 2, 3 }, 2, 2);
+
+  auto solver = usp::DpllSolver(weakPuzzle);
+  auto solverStrong = usp::DpllSolver(strongPuzzle);
+  REQUIRE(solver.has_value());
+  REQUIRE(!solverStrong.has_value());
+  auto [rho, sigma] = solver.value();
+  REQUIRE(usp::VerifyUspWeakness(weakPuzzle, rho, sigma));
+}
+*/

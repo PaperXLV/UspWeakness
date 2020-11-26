@@ -63,7 +63,95 @@ unsigned int Usp::cols() const
 Permutation::Permutation(unsigned int n) : m_data(n, n), m_size(n)
 {}
 
-void Permutation::assign(unsigned int y, unsigned int x, bool value)
+bool Permutation::checkIdentity() const
+{
+  for (unsigned int i = 0; i < m_size; ++i) {
+    const Node &node = m_data(i, i);
+    if (!node.m_value || !node.m_assigned) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Permutation::checkContradiction() const
+{
+  /*
+  for (unsigned int i = 0; i < m_size; ++i) {
+    bool rowFlag = false;
+    for (unsigned int j = 0; j < m_size; ++j) {
+      const Node &node = m_data(i, j);
+      spdlog::debug("Node: ({}, {}): assigned = {}, value = {}", i, j, node.m_assigned, node.m_value);
+
+      if (!node.m_assigned || (node.m_assigned && node.m_value)) {
+        rowFlag = true;
+        break;
+      }
+    }
+    if (!rowFlag) {
+      return false;
+    }
+  }
+  for (unsigned int i = 0; i < m_size; ++i) {
+    bool colFlag = false;
+    for (unsigned int j = 0; j < m_size; ++j) {
+      const Node &node = m_data(j, i);
+
+      if (!node.m_assigned || (node.m_assigned && node.m_value)) {
+        colFlag = true;
+        break;
+      }
+    }
+    if (!colFlag) {
+      return false;
+    }
+  }
+  return true;
+  */
+  for (unsigned int i = 0; i < m_size; ++i) {
+    bool rowflag = false;
+    bool colflag = false;
+    for (unsigned int j = 0; j < m_size; ++j) {
+      const Node &rowNode = m_data(i, j);
+      const Node &colNode = m_data(j, i);
+
+      if (!rowNode.m_assigned || (rowNode.m_assigned && rowNode.m_value)) {
+        rowflag = true;
+      }
+      if (!colNode.m_assigned || (colNode.m_assigned && colNode.m_value)) {
+        colflag = true;
+      }
+
+      if (rowflag && colflag) {
+        break;
+      }
+    }
+    if (rowflag || colflag) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::optional<unsigned int> Permutation::nextAssignment() const
+{
+  for (unsigned int i = 0; i < m_size; ++i) {
+    bool flag = false;
+    for (unsigned int j = 0; j < m_size; ++j) {
+      const Node &node = m_data(i, j);
+      if (node.m_assigned && node.m_value) {
+        flag = true;
+        break;
+      }
+    }
+    if (!flag) {
+      return std::make_optional<unsigned int>(i);
+    }
+  }
+  return std::nullopt;
+}
+
+void Permutation::assign(unsigned int y, unsigned int x, bool value, int decision_level)
 {
   // Disable all others in row if setting something to true
   if (value) {
@@ -72,6 +160,7 @@ void Permutation::assign(unsigned int y, unsigned int x, bool value)
         Node &node = m_data(y, col);
         node.m_assigned = true;
         node.m_value = false;
+        node.m_decision_level = decision_level;
       }
     }
   }
@@ -79,19 +168,65 @@ void Permutation::assign(unsigned int y, unsigned int x, bool value)
   Node &node = m_data(y, x);
   node.m_assigned = true;
   node.m_value = value;
-  // not messing with decision level yet
+  node.m_decision_level = decision_level;
 }
 
-unsigned int Permutation::assignment(unsigned int row) const
+std::optional<unsigned int> Permutation::assignment(unsigned int row) const
 {
   for (unsigned int i = 0; i < m_size; ++i) {
     if (const Node &node = m_data(row, i); node.m_value && node.m_assigned) {
-      return i;
+      return std::make_optional<unsigned int>(i);
     }
   }
-  // Failure, should not reach here
-  spdlog::error("Extracting assignment from permutation failed");
-  return -1;
+  return std::nullopt;
 }
+
+std::vector<unsigned int> Permutation::possibleAssignments(unsigned int row) const
+{
+  std::vector<unsigned int> assignments;
+  assignments.reserve(m_size);
+  for (unsigned int i = 0; i < m_size; ++i) {
+    if (!m_data(row, i).m_assigned) {
+      assignments.push_back(i);
+    }
+  }
+  return assignments;
+}
+
+void Permutation::assignPropagate(unsigned int y, unsigned int x, int decision_level)
+{
+  for (unsigned int i = 0; i < m_size; ++i) {
+    if (i != x) {
+      Node &colNode = m_data(y, i);
+      colNode.m_assigned = true;
+      colNode.m_value = false;
+      colNode.m_decision_level = decision_level;
+    }
+    if (i != y) {
+      Node &rowNode = m_data(i, x);
+      rowNode.m_assigned = true;
+      rowNode.m_value = false;
+      rowNode.m_decision_level = decision_level;
+    }
+  }
+
+  Node &assignedNode = m_data(y, x);
+  assignedNode.m_assigned = true;
+  assignedNode.m_value = true;
+  assignedNode.m_decision_level = decision_level;
+}
+
+void Permutation::undoPropagation(int decision_level)
+{
+  for (unsigned int i = 0; i < m_size; ++i) {
+    for (unsigned int j = 0; j < m_size; ++j) {
+      Node &node = m_data(i, j);
+      if (node.m_decision_level >= decision_level) {
+        node.m_assigned = false;
+      }
+    }
+  }
+}
+
 
 }// namespace usp
