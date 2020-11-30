@@ -15,6 +15,32 @@
 
 namespace usp {
 
+void UspUnitPropagation(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, int depth)
+{
+  // Modify rho and sigma to remove assignments by unit propagation
+  for (unsigned int i = 0; i < puzzle.rows(); ++i) {
+    // Only consider case where one of rho(i) or sigma(i) is undefined
+    std::optional<unsigned int> rhoAssignment = rho->assignment(i);
+    std::optional<unsigned int> sigmaAssignment = sigma->assignment(i);
+    if (rhoAssignment.has_value() && !sigmaAssignment.has_value()) {
+      // Remove all invalid assignments from sigma (all assignments that query returns 1)
+      for (unsigned int j = 0; j < puzzle.rows(); ++j) {
+        if (puzzle.query(i, rhoAssignment.value(), j)) {
+          sigma->assign(i, j, false, depth);
+        }
+      }
+    }
+    if (sigmaAssignment.has_value() && !rhoAssignment.has_value()) {
+      // Remove all invalid assignments from rho (all assignments that query returns 1)
+      for (unsigned int j = 0; j < puzzle.rows(); ++j) {
+        if (puzzle.query(i, j, sigmaAssignment.value())) {
+          rho->assign(i, j, false, depth);
+        }
+      }
+    }
+  }
+}
+
 std::optional<std::pair<Permutation, Permutation>> DpllSolverImpl(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, int depth)
 {
   // Check if any value cannot be assigned
@@ -44,6 +70,7 @@ std::optional<std::pair<Permutation, Permutation>> DpllSolverImpl(const Usp &puz
       spdlog::debug("Attempting assignment ({}, {}) to rho", rhoAssignment.value(), assignment);
 
       rho->assignPropagate(rhoAssignment.value(), assignment, depth);
+      UspUnitPropagation(puzzle, rho, sigma, depth);
       auto result = DpllSolverImpl(puzzle, rho, sigma, depth + 1);
       // Success!
       if (result.has_value()) {
@@ -56,8 +83,9 @@ std::optional<std::pair<Permutation, Permutation>> DpllSolverImpl(const Usp &puz
     std::vector<unsigned int> possibleAssignments = sigma->possibleAssignments(sigmaAssignment.value());
     for (unsigned int assignment : possibleAssignments) {
       sigma->assignPropagate(sigmaAssignment.value(), assignment, depth);
-      auto result = DpllSolverImpl(puzzle, rho, sigma, depth + 1);
+      UspUnitPropagation(puzzle, rho, sigma, depth);
 
+      auto result = DpllSolverImpl(puzzle, rho, sigma, depth + 1);
       if (result.has_value()) {
         return result;
       }

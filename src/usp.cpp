@@ -76,38 +76,6 @@ bool Permutation::checkIdentity() const
 
 bool Permutation::checkContradiction() const
 {
-  /*
-  for (unsigned int i = 0; i < m_size; ++i) {
-    bool rowFlag = false;
-    for (unsigned int j = 0; j < m_size; ++j) {
-      const Node &node = m_data(i, j);
-      spdlog::debug("Node: ({}, {}): assigned = {}, value = {}", i, j, node.m_assigned, node.m_value);
-
-      if (!node.m_assigned || (node.m_assigned && node.m_value)) {
-        rowFlag = true;
-        break;
-      }
-    }
-    if (!rowFlag) {
-      return false;
-    }
-  }
-  for (unsigned int i = 0; i < m_size; ++i) {
-    bool colFlag = false;
-    for (unsigned int j = 0; j < m_size; ++j) {
-      const Node &node = m_data(j, i);
-
-      if (!node.m_assigned || (node.m_assigned && node.m_value)) {
-        colFlag = true;
-        break;
-      }
-    }
-    if (!colFlag) {
-      return false;
-    }
-  }
-  return true;
-  */
   for (unsigned int i = 0; i < m_size; ++i) {
     bool rowflag = false;
     bool colflag = false;

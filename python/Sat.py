@@ -145,7 +145,7 @@ def verify_solution():
 
 if __name__ == "__main__":
     # verify_solution()
-    usp = GenerateUsp(4, 4)
+    usp = GenerateUsp(8, 8)
     res, model = SatReduction(usp)
     if res:
         print(usp)
