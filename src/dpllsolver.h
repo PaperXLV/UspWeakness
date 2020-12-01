@@ -59,18 +59,17 @@ std::optional<std::pair<Permutation, Permutation>> DpllSolverImpl(const Usp &puz
   auto rhoAssignment = rho->nextAssignment();
   auto sigmaAssignment = sigma->nextAssignment();
   if (!rho->nextAssignment().has_value() && !sigma->nextAssignment().has_value()) {
+    spdlog::debug("Solution found, Weak USP");
     return std::make_optional<std::pair<Permutation, Permutation>>(*rho, *sigma);
   }
 
-  spdlog::debug("Beginning Branching");
   // Branch on an assignment, applying unit propagation
   if (rhoAssignment.has_value()) {
     std::vector<unsigned int> possibleAssignments = rho->possibleAssignments(rhoAssignment.value());
     for (unsigned int assignment : possibleAssignments) {
-      spdlog::debug("Attempting assignment ({}, {}) to rho", rhoAssignment.value(), assignment);
-
       rho->assignPropagate(rhoAssignment.value(), assignment, depth);
       UspUnitPropagation(puzzle, rho, sigma, depth);
+
       auto result = DpllSolverImpl(puzzle, rho, sigma, depth + 1);
       // Success!
       if (result.has_value()) {
@@ -78,6 +77,7 @@ std::optional<std::pair<Permutation, Permutation>> DpllSolverImpl(const Usp &puz
       }
       // Try again
       rho->undoPropagation(depth);
+      sigma->undoPropagation(depth);
     }
   } else {
     std::vector<unsigned int> possibleAssignments = sigma->possibleAssignments(sigmaAssignment.value());
@@ -89,10 +89,10 @@ std::optional<std::pair<Permutation, Permutation>> DpllSolverImpl(const Usp &puz
       if (result.has_value()) {
         return result;
       }
+      rho->undoPropagation(depth);
       sigma->undoPropagation(depth);
     }
   }
-  // If control ever reaches here, we have a strong USP
   return std::nullopt;
 }
 

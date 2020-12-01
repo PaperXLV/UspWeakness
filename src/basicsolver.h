@@ -38,17 +38,19 @@ std::optional<std::pair<Permutation, Permutation>> BasicSolver(const Usp &puzzle
     return true;
   };
 
-  Permutation rho(puzzle.rows());
-  Permutation sigma(puzzle.rows());
 
   std::vector<unsigned int> range1 = generateRange();
   do {
+    Permutation rho(puzzle.rows());
+
     std::vector<unsigned int> range2 = generateRange();
     for (unsigned int i = 0; i < puzzle.rows(); ++i) {
 
       rho.assign(i, range1[i], true);
     }
     do {
+      Permutation sigma(puzzle.rows());
+
       // Check at least one string is not the identity
       if (!isIdentity(range1) || !isIdentity(range2)) {
         for (unsigned int i = 0; i < puzzle.rows(); ++i) {

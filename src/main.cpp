@@ -32,30 +32,10 @@ int main(int argc, const char **argv)
   spdlog::set_level(spdlog::level::debug);
   spdlog::debug("Debug Logging ON");
 
-  usp::Usp puzzle({ 2, 2, 2, 3 }, 2, 2);
-  /*
-  usp::Permutation rho(2);
-  usp::Permutation sigma(2);
+  // usp::Usp medStrongPuzzle({ 1, 2, 2, 2, 2, 3, 3, 3, 2, 2, 3, 2, 2, 1, 1, 3, 2, 2, 3, 2, 3, 1, 2, 3, 3, 1, 2, 1, 1, 3, 1, 3, 2, 3, 3, 1, 3, 3, 3, 3, 2, 3, 3, 3, 2, 3, 1, 2, 1, 1, 3, 3, 1, 2, 1, 3, 1, 3, 2, 1, 2, 3, 2, 2 }, 8, 8);
+  usp::Usp weakPuzzle({ 2, 2, 2, 3 }, 2, 2);
 
-  // Rho swaps 0 and 1
-  rho.assign(0, 0, false);
-  rho.assign(0, 1, true);
-  rho.assign(1, 0, true);
-  rho.assign(1, 1, false);
-
-  sigma.assign(0, 0, false);
-  sigma.assign(0, 1, true);
-  sigma.assign(1, 0, true);
-  sigma.assign(1, 1, false);
-
-
-  if (usp::VerifyUspWeakness(puzzle, rho, sigma)) {
-    spdlog::info("Weak USP");
-  } else {
-    spdlog::info("Strong USP");
-  }
-  */
 
   // Attempt dpll solver
-  auto solved = usp::DpllSolver(puzzle);
+  auto solved = usp::DpllSolver(weakPuzzle);
 }

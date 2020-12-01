@@ -126,17 +126,21 @@ void Permutation::assign(unsigned int y, unsigned int x, bool value, int decisio
     for (unsigned int col = 0; col < m_size; ++col) {
       if (col != x) {
         Node &node = m_data(y, col);
-        node.m_assigned = true;
-        node.m_value = false;
-        node.m_decision_level = decision_level;
+        if (!node.m_assigned) {
+          node.m_assigned = true;
+          node.m_value = false;
+          node.m_decision_level = decision_level;
+        }
       }
     }
   }
 
   Node &node = m_data(y, x);
-  node.m_assigned = true;
-  node.m_value = value;
-  node.m_decision_level = decision_level;
+  if (!node.m_assigned) {
+    node.m_assigned = true;
+    node.m_value = value;
+    node.m_decision_level = decision_level;
+  }
 }
 
 std::optional<unsigned int> Permutation::assignment(unsigned int row) const
@@ -152,7 +156,6 @@ std::optional<unsigned int> Permutation::assignment(unsigned int row) const
 std::vector<unsigned int> Permutation::possibleAssignments(unsigned int row) const
 {
   std::vector<unsigned int> assignments;
-  assignments.reserve(m_size);
   for (unsigned int i = 0; i < m_size; ++i) {
     if (!m_data(row, i).m_assigned) {
       assignments.push_back(i);
@@ -166,15 +169,19 @@ void Permutation::assignPropagate(unsigned int y, unsigned int x, int decision_l
   for (unsigned int i = 0; i < m_size; ++i) {
     if (i != x) {
       Node &colNode = m_data(y, i);
-      colNode.m_assigned = true;
-      colNode.m_value = false;
-      colNode.m_decision_level = decision_level;
+      if (!colNode.m_assigned) {
+        colNode.m_assigned = true;
+        colNode.m_value = false;
+        colNode.m_decision_level = decision_level;
+      }
     }
     if (i != y) {
       Node &rowNode = m_data(i, x);
-      rowNode.m_assigned = true;
-      rowNode.m_value = false;
-      rowNode.m_decision_level = decision_level;
+      if (!rowNode.m_assigned) {
+        rowNode.m_assigned = true;
+        rowNode.m_value = false;
+        rowNode.m_decision_level = decision_level;
+      }
     }
   }
 
@@ -194,6 +201,23 @@ void Permutation::undoPropagation(int decision_level)
       }
     }
   }
+}
+
+void Permutation::logData() const
+{
+  std::stringstream ss;
+  for (unsigned int i = 0; i < m_size; ++i) {
+    for (unsigned int j = 0; j < m_size; ++j) {
+      const Node &node = m_data(i, j);
+      if (node.m_assigned) {
+        ss << static_cast<int>(node.m_value) << " ";
+      } else {
+        ss << "x ";
+      }
+    }
+    ss << "\n";
+  }
+  spdlog::debug(ss.str());
 }
 
 

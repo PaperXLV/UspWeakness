@@ -96,9 +96,12 @@ TEST_CASE("DPLL Solver works on small puzzles", "[solver]")
 TEST_CASE("DPLL Solver works on medium sized puzzles", "[solver]")
 {
   usp::Usp medWeakPuzzle({ 3, 2, 3, 1, 2, 1, 1, 2, 1, 2, 1, 1, 2, 3, 1, 2, 3, 2, 2, 3, 3, 3, 3, 2, 3, 2, 3, 1, 1, 1, 2, 1, 1, 2, 3, 3, 2, 3, 1, 3, 3, 2, 3, 3, 2, 3, 3, 1, 3, 1, 2, 3, 1, 1, 3, 3, 3, 2, 3, 1, 1, 3, 3, 3 }, 8, 8);
+  usp::Usp medStrongPuzzle({ 1, 2, 2, 2, 2, 3, 3, 3, 2, 2, 3, 2, 2, 1, 1, 3, 2, 2, 3, 2, 3, 1, 2, 3, 3, 1, 2, 1, 1, 3, 1, 3, 2, 3, 3, 1, 3, 3, 3, 3, 2, 3, 3, 3, 2, 3, 1, 2, 1, 1, 3, 3, 1, 2, 1, 3, 1, 3, 2, 1, 2, 3, 2, 2 }, 8, 8);
 
   auto solver = usp::DpllSolver(medWeakPuzzle);
+  auto strongSolver = usp::DpllSolver(medStrongPuzzle);
   REQUIRE(solver.has_value());
+  REQUIRE(!strongSolver.has_value());
   auto [rho, sigma] = solver.value();
   REQUIRE(usp::VerifyUspWeakness(medWeakPuzzle, rho, sigma));
 }

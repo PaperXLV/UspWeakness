@@ -152,3 +152,6 @@ if __name__ == "__main__":
         p, s = ExtractAssignment(usp, model)
         print(p)
         print(s)
+    else:
+        print("Strong")
+        print(usp)

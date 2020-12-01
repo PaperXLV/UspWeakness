@@ -78,6 +78,8 @@ public:
   void assignPropagate(unsigned int y, unsigned int x, int decision_level);
   // Undo all propagation that happened at decision_level or below
   void undoPropagation(int decision_level);
+  // Debug log the data matrix
+  void logData() const;
 
 private:
   Matrix<Node> m_data;
