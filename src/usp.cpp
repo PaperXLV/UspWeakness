@@ -60,6 +60,9 @@ unsigned int Usp::cols() const
   return m_cols;
 }
 
+SatVariable::SatVariable(std::pair<unsigned int, unsigned int> position, bool positive, bool rho) : m_position(position), m_positive(positive), m_rho(rho)
+{}
+
 Permutation::Permutation(unsigned int n) : m_data(n, n), m_size(n)
 {}
 
@@ -173,6 +176,7 @@ void Permutation::assignPropagate(unsigned int y, unsigned int x, int decision_l
         colNode.m_assigned = true;
         colNode.m_value = false;
         colNode.m_decision_level = decision_level;
+        colNode.m_antecedents.push_back(&m_data(y, x));
       }
     }
     if (i != y) {
@@ -181,6 +185,7 @@ void Permutation::assignPropagate(unsigned int y, unsigned int x, int decision_l
         rowNode.m_assigned = true;
         rowNode.m_value = false;
         rowNode.m_decision_level = decision_level;
+        rowNode.m_antecedents.push_back(&m_data(y, x));
       }
     }
   }
@@ -198,6 +203,8 @@ void Permutation::undoPropagation(int decision_level)
       Node &node = m_data(i, j);
       if (node.m_decision_level >= decision_level) {
         node.m_assigned = false;
+        // Clear antecedents
+        node.m_antecedents.clear();
       }
     }
   }

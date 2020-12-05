@@ -12,7 +12,6 @@
 
 #include <spdlog/spdlog.h>
 
-
 namespace usp {
 
 void UspUnitPropagation(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, int depth)

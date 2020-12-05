@@ -1,6 +1,7 @@
 #ifndef USP_H
 #define USP_H
 
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -50,8 +51,30 @@ public:
   bool m_assigned{ false };
   bool m_value{ false };
   int m_decision_level{ -1 };
-  // antecedent?
+  // Non-owning raw pointer since nodes are held by value
+  // in Permutation, and all nodes are guarenteed
+  // to exist for the entire runtime of the CDCL solver.
+  std::vector<Node *> m_antecedents{ nullptr };
 };
+
+/* Represents a CNF-SAT variable to be used in learned 
+ * clauses in the CDCL solver.
+ * Each instance corresponds to the Node at position in a   
+ * Permutation. Negated if positive is set to false, and 
+ * belongs to Permutation rho if rho is set to true. 
+ */
+class SatVariable
+{
+public:
+  SatVariable(std::pair<unsigned int, unsigned int> position, bool positive, bool rho);
+
+private:
+  std::pair<unsigned int, unsigned int> m_position{ 0, 0 };
+  bool m_positive{ true };
+  bool m_rho{ true };
+};
+
+using SatClause = std::vector<SatVariable>;
 
 /* Holds n^2 nodes, defines a permutation of the USP. 
  * At most one node per row will have a value of true, 
