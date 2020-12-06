@@ -5,7 +5,16 @@
 #include "usp.h"
 #include "verifier.h"
 #include "basicsolver.h"
+#include "cdclsolver.h"
 #include "dpllsolver.h"
+
+namespace data {
+const usp::Usp weakPuzzle({ 2, 2, 2, 3 }, 2, 2);
+const usp::Usp strongPuzzle({ 1, 1, 2, 3 }, 2, 2);
+
+const usp::Usp medWeakPuzzle({ 3, 2, 3, 1, 2, 1, 1, 2, 1, 2, 1, 1, 2, 3, 1, 2, 3, 2, 2, 3, 3, 3, 3, 2, 3, 2, 3, 1, 1, 1, 2, 1, 1, 2, 3, 3, 2, 3, 1, 3, 3, 2, 3, 3, 2, 3, 3, 1, 3, 1, 2, 3, 1, 1, 3, 3, 3, 2, 3, 1, 1, 3, 3, 3 }, 8, 8);
+const usp::Usp medStrongPuzzle({ 1, 2, 2, 2, 2, 3, 3, 3, 2, 2, 3, 2, 2, 1, 1, 3, 2, 2, 3, 2, 3, 1, 2, 3, 3, 1, 2, 1, 1, 3, 1, 3, 2, 3, 3, 1, 3, 3, 3, 3, 2, 3, 3, 3, 2, 3, 1, 2, 1, 1, 3, 3, 1, 2, 1, 3, 1, 3, 2, 1, 2, 3, 2, 2 }, 8, 8);
+}// namespace data
 
 TEST_CASE("USP and Permutation construction", "[usp]")
 {
@@ -27,8 +36,6 @@ TEST_CASE("USP and Permutation construction", "[usp]")
 
 TEST_CASE("USP Verifier on small weak puzzles", "[usp]")
 {
-  usp::Usp puzzle({ 2, 2, 2, 3 }, 2, 2);
-
   usp::Permutation rho(2);
   usp::Permutation sigma(2);
 
@@ -43,13 +50,11 @@ TEST_CASE("USP Verifier on small weak puzzles", "[usp]")
   sigma.assign(1, 0, true);
   sigma.assign(1, 1, false);
 
-  REQUIRE(usp::VerifyUspWeakness(puzzle, rho, sigma));
+  REQUIRE(usp::VerifyUspWeakness(data::weakPuzzle, rho, sigma));
 }
 
 TEST_CASE("USP Verifier failure on small strong puzzles", "[usp]")
 {
-  usp::Usp puzzle({ 1, 1, 2, 3 }, 2, 2);
-
   usp::Permutation rho(2);
   usp::Permutation sigma(2);
 
@@ -64,44 +69,55 @@ TEST_CASE("USP Verifier failure on small strong puzzles", "[usp]")
   sigma.assign(1, 0, true);
   sigma.assign(1, 1, false);
 
-  REQUIRE(!usp::VerifyUspWeakness(puzzle, rho, sigma));
+  REQUIRE(!usp::VerifyUspWeakness(data::strongPuzzle, rho, sigma));
 }
 
 TEST_CASE("Basic Solver works on small puzzles", "[solver]")
 {
-  usp::Usp weakPuzzle({ 2, 2, 2, 3 }, 2, 2);
-  usp::Usp strongPuzzle({ 1, 1, 2, 3 }, 2, 2);
-
-  auto solver = usp::BasicSolver(weakPuzzle);
-  auto solverStrong = usp::BasicSolver(strongPuzzle);
+  auto solver = usp::BasicSolver(data::weakPuzzle);
+  auto solverStrong = usp::BasicSolver(data::strongPuzzle);
   REQUIRE(solver.has_value());
   REQUIRE(!solverStrong.has_value());
   auto [rho, sigma] = solver.value();
-  REQUIRE(usp::VerifyUspWeakness(weakPuzzle, rho, sigma));
+  REQUIRE(usp::VerifyUspWeakness(data::weakPuzzle, rho, sigma));
 }
 
 TEST_CASE("DPLL Solver works on small puzzles", "[solver]")
 {
-  usp::Usp weakPuzzle({ 2, 2, 2, 3 }, 2, 2);
-  usp::Usp strongPuzzle({ 1, 1, 2, 3 }, 2, 2);
-
-  auto solver = usp::DpllSolver(weakPuzzle);
-  auto solverStrong = usp::DpllSolver(strongPuzzle);
+  auto solver = usp::DpllSolver(data::weakPuzzle);
+  auto solverStrong = usp::DpllSolver(data::strongPuzzle);
   REQUIRE(solver.has_value());
   REQUIRE(!solverStrong.has_value());
   auto [rho, sigma] = solver.value();
-  REQUIRE(usp::VerifyUspWeakness(weakPuzzle, rho, sigma));
+  REQUIRE(usp::VerifyUspWeakness(data::weakPuzzle, rho, sigma));
 }
 
 TEST_CASE("DPLL Solver works on medium sized puzzles", "[solver]")
 {
-  usp::Usp medWeakPuzzle({ 3, 2, 3, 1, 2, 1, 1, 2, 1, 2, 1, 1, 2, 3, 1, 2, 3, 2, 2, 3, 3, 3, 3, 2, 3, 2, 3, 1, 1, 1, 2, 1, 1, 2, 3, 3, 2, 3, 1, 3, 3, 2, 3, 3, 2, 3, 3, 1, 3, 1, 2, 3, 1, 1, 3, 3, 3, 2, 3, 1, 1, 3, 3, 3 }, 8, 8);
-  usp::Usp medStrongPuzzle({ 1, 2, 2, 2, 2, 3, 3, 3, 2, 2, 3, 2, 2, 1, 1, 3, 2, 2, 3, 2, 3, 1, 2, 3, 3, 1, 2, 1, 1, 3, 1, 3, 2, 3, 3, 1, 3, 3, 3, 3, 2, 3, 3, 3, 2, 3, 1, 2, 1, 1, 3, 3, 1, 2, 1, 3, 1, 3, 2, 1, 2, 3, 2, 2 }, 8, 8);
-
-  auto solver = usp::DpllSolver(medWeakPuzzle);
-  auto strongSolver = usp::DpllSolver(medStrongPuzzle);
+  auto solver = usp::DpllSolver(data::medWeakPuzzle);
+  auto strongSolver = usp::DpllSolver(data::medStrongPuzzle);
   REQUIRE(solver.has_value());
   REQUIRE(!strongSolver.has_value());
   auto [rho, sigma] = solver.value();
-  REQUIRE(usp::VerifyUspWeakness(medWeakPuzzle, rho, sigma));
+  REQUIRE(usp::VerifyUspWeakness(data::medWeakPuzzle, rho, sigma));
+}
+
+TEST_CASE("CDCL Solver works on small puzzles", "[solver]")
+{
+  auto solver = usp::CdclSolver(data::weakPuzzle);
+  auto solverStrong = usp::CdclSolver(data::strongPuzzle);
+  REQUIRE(solver.has_value());
+  REQUIRE(!solverStrong.has_value());
+  auto [rho, sigma] = solver.value();
+  REQUIRE(usp::VerifyUspWeakness(data::weakPuzzle, rho, sigma));
+}
+
+TEST_CASE("CDCL Solver works on medium sized puzzles", "[solver]")
+{
+  auto solver = usp::CdclSolver(data::medWeakPuzzle);
+  auto strongSolver = usp::CdclSolver(data::medStrongPuzzle);
+  REQUIRE(solver.has_value());
+  REQUIRE(!strongSolver.has_value());
+  auto [rho, sigma] = solver.value();
+  REQUIRE(usp::VerifyUspWeakness(data::medWeakPuzzle, rho, sigma));
 }
