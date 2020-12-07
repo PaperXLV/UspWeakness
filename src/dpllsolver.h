@@ -66,7 +66,7 @@ std::optional<std::pair<Permutation, Permutation>> DpllSolverImpl(const Usp &puz
   if (rhoAssignment.has_value()) {
     std::vector<unsigned int> possibleAssignments = rho->possibleAssignments(rhoAssignment.value());
     for (unsigned int assignment : possibleAssignments) {
-      rho->assignPropagate(rhoAssignment.value(), assignment, depth);
+      rho->assignPropagate(rhoAssignment.value(), assignment, true, depth);
       UspUnitPropagation(puzzle, rho, sigma, depth);
 
       auto result = DpllSolverImpl(puzzle, rho, sigma, depth + 1);
@@ -81,7 +81,7 @@ std::optional<std::pair<Permutation, Permutation>> DpllSolverImpl(const Usp &puz
   } else {
     std::vector<unsigned int> possibleAssignments = sigma->possibleAssignments(sigmaAssignment.value());
     for (unsigned int assignment : possibleAssignments) {
-      sigma->assignPropagate(sigmaAssignment.value(), assignment, depth);
+      sigma->assignPropagate(sigmaAssignment.value(), assignment, false, depth);
       UspUnitPropagation(puzzle, rho, sigma, depth);
 
       auto result = DpllSolverImpl(puzzle, rho, sigma, depth + 1);

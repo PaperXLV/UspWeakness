@@ -3,26 +3,73 @@
 
 #include "dpllsolver.h"
 
+#include <queue>
+#include <set>
+
 namespace usp {
 
-// Apply unit propagation from setting (assignment) = true in the corresponding permutation
 void CdclUnitPropagation(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, std::pair<unsigned int, unsigned int> assignment, bool assignmentToRho, int depth)
 {
+  // Apply unit propagation from setting (assignment) = true in the corresponding permutation
   for (unsigned int i = 0; i < puzzle.rows(); ++i) {
     if (assignmentToRho && puzzle.query(assignment.first, assignment.second, i)) {
-      sigma->assign(assignment.first, i, false, depth);// antecedent should be rho(assignment)
-    } else if (puzzle.query(assignment.first, i, assignment.second)) {
-      rho->assign(assignment.first, i, false, depth);// antecedent should be sigma(assignment)
+      sigma->assign(assignment.first, i, false, depth, { SatVariable(assignment, true, assignmentToRho) });// antecedent should be rho(assignment)
+    } else if (!assignmentToRho && puzzle.query(assignment.first, i, assignment.second)) {
+      rho->assign(assignment.first, i, false, depth, { SatVariable(assignment, true, assignmentToRho) });// antecedent should be sigma(assignment)
     }
   }
   // Apply unit propagation through learned clauses
 }
 
-std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, int depth)
+SatClause CdclConflictAnalysis(const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, int depth)
 {
-  // Check if any value cannot be assigned
+  // Simulate a sequence of resolution operations by traversing the
+  // implication graph backwards
+  SatClause learnedClause;
+  std::queue<SatVariable> implicationGraphQueue;
+  std::vector<SatVariable> rhoAntecedents = rho->contradictionAntecedents(depth);
+  std::vector<SatVariable> sigmaAntecedents = sigma->contradictionAntecedents(depth);
+  std::vector<SatVariable> antecedents;
+
+  for (unsigned int i = 0; i < rhoAntecedents.size(); ++i) {
+    implicationGraphQueue.push(rhoAntecedents[i]);
+  }
+  for (unsigned int i = 0; i < sigmaAntecedents.size(); ++i) {
+    implicationGraphQueue.push(sigmaAntecedents[i]);
+  }
+
+  while (!implicationGraphQueue.empty()) {
+    SatVariable front = implicationGraphQueue.front();
+    implicationGraphQueue.pop();
+
+    // In the space of variables implied at depth, continue traversing
+    if (int decisionLevel = ((front.m_rho) ? rho->nodeDecisionLevel(front.m_position) : sigma->nodeDecisionLevel(front.m_position));
+        decisionLevel == depth) {
+      antecedents = (front.m_rho) ? rho->antecedents(front.m_position) : sigma->antecedents(front.m_position);
+      // Add all antecedents of this variable to the queue
+      if (antecedents.size() > 0) {
+        for (unsigned int i = 0; i < antecedents.size(); ++i) {
+          implicationGraphQueue.push(antecedents[i]);
+        }
+      }
+      // No antecedents, this must be the decision variable. Add to clause
+      else {
+        learnedClause.addVariable(front);
+      }
+    }
+    // Variable decided at some other level, add to clause
+    else {
+      learnedClause.addVariable(front);
+    }
+  }
+  return learnedClause;
+}
+
+std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, std::set<SatClause> &learnedClauses, int depth)
+{
+  spdlog::debug("Learned {} total clauses", learnedClauses.size());
+  // Check contradiction
   if (rho->checkContradiction() || sigma->checkContradiction()) {
-    spdlog::debug("Contradiction found");
     return std::nullopt;
   }
 
@@ -37,6 +84,7 @@ std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puz
   auto sigmaAssignment = sigma->nextAssignment();
   if (!rho->nextAssignment().has_value() && !sigma->nextAssignment().has_value()) {
     spdlog::debug("Solution found, Weak USP");
+    // Copy rho and sigma instead of just dereferencing.
     return std::make_optional<std::pair<Permutation, Permutation>>(*rho, *sigma);
   }
 
@@ -44,10 +92,19 @@ std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puz
   if (rhoAssignment.has_value()) {
     std::vector<unsigned int> possibleAssignments = rho->possibleAssignments(rhoAssignment.value());
     for (unsigned int assignment : possibleAssignments) {
-      rho->assignPropagate(rhoAssignment.value(), assignment, depth);
+      rho->assignPropagate(rhoAssignment.value(), assignment, true, depth);
       CdclUnitPropagation(puzzle, rho, sigma, { rhoAssignment.value(), assignment }, true, depth);
 
-      auto result = CdclSolverImpl(puzzle, rho, sigma, depth + 1);
+      // Check if any value cannot be assigned
+      if (rho->checkContradiction() || sigma->checkContradiction()) {
+        SatClause learnedClause = CdclConflictAnalysis(rho, sigma, depth);
+        if (learnedClause.size() != 0) {
+          learnedClauses.insert(learnedClause);
+        }
+      }
+
+      auto result = CdclSolverImpl(puzzle, rho, sigma, learnedClauses, depth + 1);
+
       // Success!
       if (result.has_value()) {
         return result;
@@ -59,10 +116,18 @@ std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puz
   } else {
     std::vector<unsigned int> possibleAssignments = sigma->possibleAssignments(sigmaAssignment.value());
     for (unsigned int assignment : possibleAssignments) {
-      sigma->assignPropagate(sigmaAssignment.value(), assignment, depth);
+      sigma->assignPropagate(sigmaAssignment.value(), assignment, false, depth);
       CdclUnitPropagation(puzzle, rho, sigma, { sigmaAssignment.value(), assignment }, false, depth);
 
-      auto result = CdclSolverImpl(puzzle, rho, sigma, depth + 1);
+      // Check if any value cannot be assigned
+      if (rho->checkContradiction() || sigma->checkContradiction()) {
+        SatClause learnedClause = CdclConflictAnalysis(rho, sigma, depth);
+        if (learnedClause.size() != 0) {
+          learnedClauses.insert(learnedClause);
+        }
+      }
+
+      auto result = CdclSolverImpl(puzzle, rho, sigma, learnedClauses, depth + 1);
       if (result.has_value()) {
         return result;
       }
@@ -75,7 +140,8 @@ std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puz
 
 std::optional<std::pair<Permutation, Permutation>> CdclSolver(const Usp &puzzle)
 {
-  return CdclSolverImpl(puzzle, std::make_unique<Permutation>(puzzle.rows()), std::make_unique<Permutation>(puzzle.rows()), 0);
+  std::set<SatClause> learnedClauses;
+  return CdclSolverImpl(puzzle, std::make_unique<Permutation>(puzzle.rows()), std::make_unique<Permutation>(puzzle.rows()), learnedClauses, 0);
 }
 
 }// namespace usp

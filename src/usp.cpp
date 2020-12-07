@@ -63,6 +63,37 @@ unsigned int Usp::cols() const
 SatVariable::SatVariable(std::pair<unsigned int, unsigned int> position, bool positive, bool rho) : m_position(position), m_positive(positive), m_rho(rho)
 {}
 
+long unsigned int SatClause::size() const
+{
+  return m_variables.size();
+}
+
+void SatClause::addVariable(SatVariable var)
+{
+  m_variables.insert(var);
+}
+
+bool operator==(const SatVariable &lhs, const SatVariable &rhs)
+{
+  return lhs.m_position == rhs.m_position && lhs.m_rho == rhs.m_rho && lhs.m_positive == rhs.m_positive;
+}
+
+bool operator<(const SatVariable &lhs, const SatVariable &rhs)
+{
+  return lhs.m_position < rhs.m_position;
+}
+
+bool operator==(const SatClause &lhs, const SatClause &rhs)
+{
+  return lhs.m_variables == rhs.m_variables;
+}
+
+bool operator<(const SatClause &lhs, const SatClause &rhs)
+{
+  return lhs.m_variables < rhs.m_variables;
+}
+
+
 Permutation::Permutation(unsigned int n) : m_data(n, n), m_size(n)
 {}
 
@@ -79,29 +110,22 @@ bool Permutation::checkIdentity() const
 
 bool Permutation::checkContradiction() const
 {
+  // if any row can't be assigned, we have a contradiction
+  // Note: can also iterate through columns
   for (unsigned int i = 0; i < m_size; ++i) {
-    bool rowflag = false;
-    bool colflag = false;
+    bool flag = false;
     for (unsigned int j = 0; j < m_size; ++j) {
-      const Node &rowNode = m_data(i, j);
-      const Node &colNode = m_data(j, i);
-
-      if (!rowNode.m_assigned || (rowNode.m_assigned && rowNode.m_value)) {
-        rowflag = true;
-      }
-      if (!colNode.m_assigned || (colNode.m_assigned && colNode.m_value)) {
-        colflag = true;
-      }
-
-      if (rowflag && colflag) {
+      const Node &node = m_data(i, j);
+      if (!node.m_assigned || (node.m_assigned && node.m_value)) {
+        flag = true;
         break;
       }
     }
-    if (rowflag || colflag) {
-      return false;
+    if (!flag) {
+      return true;
     }
   }
-  return true;
+  return false;
 }
 
 std::optional<unsigned int> Permutation::nextAssignment() const
@@ -122,7 +146,7 @@ std::optional<unsigned int> Permutation::nextAssignment() const
   return std::nullopt;
 }
 
-void Permutation::assign(unsigned int y, unsigned int x, bool value, int decision_level)
+void Permutation::assign(unsigned int y, unsigned int x, bool value, int decision_level, std::vector<SatVariable> antecedents)
 {
   // Disable all others in row if setting something to true
   if (value) {
@@ -143,6 +167,7 @@ void Permutation::assign(unsigned int y, unsigned int x, bool value, int decisio
     node.m_assigned = true;
     node.m_value = value;
     node.m_decision_level = decision_level;
+    node.m_antecedents = antecedents;
   }
 }
 
@@ -167,7 +192,34 @@ std::vector<unsigned int> Permutation::possibleAssignments(unsigned int row) con
   return assignments;
 }
 
-void Permutation::assignPropagate(unsigned int y, unsigned int x, int decision_level)
+std::vector<SatVariable> Permutation::contradictionAntecedents(int decision_level) const
+{
+  std::vector<SatVariable> antecedents;
+  for (unsigned int i = 0; i < m_size; ++i) {
+    bool flag = false;
+    for (unsigned int j = 0; j < m_size; ++j) {
+      const Node &node = m_data(i, j);
+      if (!node.m_assigned || (node.m_assigned && node.m_value)) {
+        flag = true;
+        break;
+      }
+    }
+    if (!flag) {
+      // Contradictary row, add all antecedents at decision_level
+      for (unsigned int j = 0; j < m_size; ++j) {
+        const Node &node = m_data(i, j);
+        if (node.m_decision_level == decision_level) {
+          std::vector<SatVariable> tempAntecedents = this->antecedents({ i, j });
+          antecedents.insert(std::end(antecedents), std::begin(tempAntecedents), std::end(tempAntecedents));
+        }
+      }
+    }
+  }
+  return antecedents;
+}
+
+
+void Permutation::assignPropagate(unsigned int y, unsigned int x, bool rho, int decision_level)
 {
   for (unsigned int i = 0; i < m_size; ++i) {
     if (i != x) {
@@ -176,7 +228,7 @@ void Permutation::assignPropagate(unsigned int y, unsigned int x, int decision_l
         colNode.m_assigned = true;
         colNode.m_value = false;
         colNode.m_decision_level = decision_level;
-        colNode.m_antecedents.push_back(&m_data(y, x));
+        colNode.m_antecedents.push_back(SatVariable({ y, x }, false, rho));
       }
     }
     if (i != y) {
@@ -185,7 +237,7 @@ void Permutation::assignPropagate(unsigned int y, unsigned int x, int decision_l
         rowNode.m_assigned = true;
         rowNode.m_value = false;
         rowNode.m_decision_level = decision_level;
-        rowNode.m_antecedents.push_back(&m_data(y, x));
+        rowNode.m_antecedents.push_back(SatVariable({ y, x }, false, rho));
       }
     }
   }
@@ -194,6 +246,16 @@ void Permutation::assignPropagate(unsigned int y, unsigned int x, int decision_l
   assignedNode.m_assigned = true;
   assignedNode.m_value = true;
   assignedNode.m_decision_level = decision_level;
+}
+
+std::vector<SatVariable> Permutation::antecedents(std::pair<unsigned int, unsigned int> assignment) const
+{
+  return m_data(assignment.first, assignment.second).m_antecedents;
+}
+
+int Permutation::nodeDecisionLevel(std::pair<unsigned int, unsigned int> assignment) const
+{
+  return m_data(assignment.first, assignment.second).m_decision_level;
 }
 
 void Permutation::undoPropagation(int decision_level)

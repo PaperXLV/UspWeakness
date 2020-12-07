@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <optional>
+#include <set>
 #include <vector>
 
 namespace usp {
@@ -39,6 +40,48 @@ private:
   unsigned int m_cols{ 0 };
 };
 
+/* Represents a CNF-SAT variable to be used in learned 
+ * clauses in the CDCL solver.
+ * Each instance corresponds to the Node at position in a   
+ * Permutation. Negated if positive is set to false, and 
+ * belongs to Permutation rho if rho is set to true. 
+ */
+class SatVariable
+{
+public:
+  SatVariable(std::pair<unsigned int, unsigned int> position, bool positive, bool rho);
+
+  std::pair<unsigned int, unsigned int> m_position{ 0, 0 };
+  bool m_positive{ true };
+  bool m_rho{ true };
+
+  friend bool operator==(const SatVariable &lhs, const SatVariable &rhs);
+  friend bool operator<(const SatVariable &lhs, const SatVariable &rhs);
+};
+
+class SatClause
+{
+public:
+  void addVariable(SatVariable var);
+
+  long unsigned int size() const;
+
+  enum class State {
+    UNRESOLVED,
+    SATISFIED,
+    CONFLICTING,
+    UNIT
+  };
+
+  friend bool operator==(const SatClause &lhs, const SatClause &rhs);
+  friend bool operator<(const SatClause &lhs, const SatClause &rhs);
+
+private:
+  std::set<SatVariable>
+    m_variables;
+
+  SatClause::State m_state{ SatClause::State::UNRESOLVED };
+};
 
 /* Represents a CDCL variable. 
  * Contains a boolean (or unassigned) value, 
@@ -51,30 +94,8 @@ public:
   bool m_assigned{ false };
   bool m_value{ false };
   int m_decision_level{ -1 };
-  // Non-owning raw pointer since nodes are held by value
-  // in Permutation, and all nodes are guarenteed
-  // to exist for the entire runtime of the CDCL solver.
-  std::vector<Node *> m_antecedents{ nullptr };
+  std::vector<SatVariable> m_antecedents{};
 };
-
-/* Represents a CNF-SAT variable to be used in learned 
- * clauses in the CDCL solver.
- * Each instance corresponds to the Node at position in a   
- * Permutation. Negated if positive is set to false, and 
- * belongs to Permutation rho if rho is set to true. 
- */
-class SatVariable
-{
-public:
-  SatVariable(std::pair<unsigned int, unsigned int> position, bool positive, bool rho);
-
-private:
-  std::pair<unsigned int, unsigned int> m_position{ 0, 0 };
-  bool m_positive{ true };
-  bool m_rho{ true };
-};
-
-using SatClause = std::vector<SatVariable>;
 
 /* Holds n^2 nodes, defines a permutation of the USP. 
  * At most one node per row will have a value of true, 
@@ -93,14 +114,20 @@ public:
   std::optional<unsigned int> nextAssignment() const;
   // Return which column is assigned by row
   std::optional<unsigned int> assignment(unsigned int row) const;
+  // Return all antecedents of every contradictary row at decision_level
+  std::vector<SatVariable> contradictionAntecedents(int decision_level) const;
   // Return all possible assignments by row
   std::vector<unsigned int> possibleAssignments(unsigned int row) const;
   // Assign element (y, x) to value.
-  void assign(unsigned int y, unsigned int x, bool value, int decision_level = -1);
+  void assign(unsigned int y, unsigned int x, bool value, int decision_level = -1, std::vector<SatVariable> antecedents = {});
   // Assigns element (y, x) to true. Performs simple unit propagation.
-  void assignPropagate(unsigned int y, unsigned int x, int decision_level);
+  void assignPropagate(unsigned int y, unsigned int x, bool rho, int decision_level);
   // Undo all propagation that happened at decision_level or below
   void undoPropagation(int decision_level);
+  // Return the antecedents to the Node at (assignment)
+  std::vector<SatVariable> antecedents(std::pair<unsigned int, unsigned int> assignment) const;
+  // Return the decision level to the Node at (assignment)
+  int nodeDecisionLevel(std::pair<unsigned int, unsigned int> assignment) const;
   // Debug log the data matrix
   void logData() const;
 
