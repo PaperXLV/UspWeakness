@@ -8,6 +8,27 @@
 
 namespace usp {
 
+bool ClauseUnitPropagation(const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, std::set<SatClause> &learnedClauses, int depth)
+{
+  bool loop = true;
+  while (loop) {
+    loop = false;
+    for (auto &satClause : learnedClauses) {
+      if (satClause.state() != SatClause::State::SATISFIED) {
+        // evaluate will only modify state, which does not affect ordering of clauses.
+        SatClause::State state = const_cast<SatClause &>(satClause).evaluate(rho, sigma, depth);
+        if (state == SatClause::State::CONFLICTING) {
+          return false;
+        }
+        if (state == SatClause::State::UNIT) {
+          loop = true;
+        }
+      }
+    }
+  }
+  return true;
+}
+
 void CdclUnitPropagation(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, std::pair<unsigned int, unsigned int> assignment, bool assignmentToRho, int depth)
 {
   // Apply unit propagation from setting (assignment) = true in the corresponding permutation
@@ -67,7 +88,13 @@ SatClause CdclConflictAnalysis(const std::unique_ptr<Permutation> &rho, const st
 
 std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, std::set<SatClause> &learnedClauses, int depth)
 {
-  spdlog::debug("Learned {} total clauses", learnedClauses.size());
+  // Update clauses
+  /*
+  for (auto &satClause : learnedClauses) {
+    const_cast<SatClause &>(satClause).evaluate(rho, sigma, depth);
+  }
+  */
+
   // Check contradiction
   if (rho->checkContradiction() || sigma->checkContradiction()) {
     return std::nullopt;
@@ -95,6 +122,8 @@ std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puz
       rho->assignPropagate(rhoAssignment.value(), assignment, true, depth);
       CdclUnitPropagation(puzzle, rho, sigma, { rhoAssignment.value(), assignment }, true, depth);
 
+      bool success = ClauseUnitPropagation(rho, sigma, learnedClauses, depth);
+
       // Check if any value cannot be assigned
       if (rho->checkContradiction() || sigma->checkContradiction()) {
         SatClause learnedClause = CdclConflictAnalysis(rho, sigma, depth);
@@ -103,11 +132,14 @@ std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puz
         }
       }
 
-      auto result = CdclSolverImpl(puzzle, rho, sigma, learnedClauses, depth + 1);
+      // Continue through the tree only if the clause propagation didn't find a contradiction
+      if (success) {
+        auto result = CdclSolverImpl(puzzle, rho, sigma, learnedClauses, depth + 1);
 
-      // Success!
-      if (result.has_value()) {
-        return result;
+        // Success!
+        if (result.has_value()) {
+          return result;
+        }
       }
       // Try again
       rho->undoPropagation(depth);
@@ -119,6 +151,8 @@ std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puz
       sigma->assignPropagate(sigmaAssignment.value(), assignment, false, depth);
       CdclUnitPropagation(puzzle, rho, sigma, { sigmaAssignment.value(), assignment }, false, depth);
 
+      bool success = ClauseUnitPropagation(rho, sigma, learnedClauses, depth);
+
       // Check if any value cannot be assigned
       if (rho->checkContradiction() || sigma->checkContradiction()) {
         SatClause learnedClause = CdclConflictAnalysis(rho, sigma, depth);
@@ -127,9 +161,11 @@ std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puz
         }
       }
 
-      auto result = CdclSolverImpl(puzzle, rho, sigma, learnedClauses, depth + 1);
-      if (result.has_value()) {
-        return result;
+      if (success) {
+        auto result = CdclSolverImpl(puzzle, rho, sigma, learnedClauses, depth + 1);
+        if (result.has_value()) {
+          return result;
+        }
       }
       rho->undoPropagation(depth);
       sigma->undoPropagation(depth);

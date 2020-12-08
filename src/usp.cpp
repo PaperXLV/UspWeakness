@@ -6,7 +6,6 @@
 
 #include <spdlog/spdlog.h>
 
-
 namespace usp {
 
 Usp::Usp(std::vector<int> data, unsigned int n, unsigned int k) : m_data(n, k, std::move(data)), m_rows(n), m_cols(k)
@@ -73,6 +72,52 @@ void SatClause::addVariable(SatVariable var)
   m_variables.insert(var);
 }
 
+SatClause::State SatClause::state() const
+{
+  return m_state;
+}
+
+SatClause::State SatClause::evaluate(const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, int depth)
+{
+  SatVariable lastUnassigned;
+  unsigned int assignmentCounter = 0;
+  for (auto &variable : m_variables) {
+    int nodeValue = (variable.m_rho) ? rho->value(variable.m_position) : sigma->value(variable.m_position);
+    // assignment satisfies clause
+    if ((nodeValue == 1 && variable.m_positive) || (nodeValue == 0 && !variable.m_positive)) {
+      m_state = State::SATISFIED;
+      return State::SATISFIED;
+    }
+    // assignment doesn't satisfy clause
+    if ((nodeValue == 1 && !variable.m_positive) || (nodeValue == 0 && variable.m_positive)) {
+      ++assignmentCounter;
+    }
+    // unassigned
+    if (nodeValue == 2) {
+      lastUnassigned = variable;
+    }
+  }
+  // Every variable assigned and clause is not satisfied, contradiction
+  if (assignmentCounter == m_variables.size()) {
+    m_state = State::CONFLICTING;
+    return State::CONFLICTING;
+  }
+  // Unit clause
+  else if (assignmentCounter == m_variables.size() - 1) {
+    if (lastUnassigned.m_positive) {
+      (lastUnassigned.m_rho) ? rho->assignPropagate(lastUnassigned.m_position.first, lastUnassigned.m_position.second, true, depth) : sigma->assignPropagate(lastUnassigned.m_position.first, lastUnassigned.m_position.second, false, depth);
+    } else {
+      (lastUnassigned.m_rho) ? rho->assign(lastUnassigned.m_position.first, lastUnassigned.m_position.second, false, depth) : sigma->assign(lastUnassigned.m_position.first, lastUnassigned.m_position.second, false, depth);
+    }
+    // Set to satisfied, but return unit to tell algorithm to loop propagation again.
+    m_state = State::SATISFIED;
+    return State::UNIT;
+  }
+  m_state = State::UNRESOLVED;
+  return State::UNRESOLVED;
+}
+
+
 bool operator==(const SatVariable &lhs, const SatVariable &rhs)
 {
   return lhs.m_position == rhs.m_position && lhs.m_rho == rhs.m_rho && lhs.m_positive == rhs.m_positive;
@@ -92,7 +137,6 @@ bool operator<(const SatClause &lhs, const SatClause &rhs)
 {
   return lhs.m_variables < rhs.m_variables;
 }
-
 
 Permutation::Permutation(unsigned int n) : m_data(n, n), m_size(n)
 {}
@@ -218,7 +262,6 @@ std::vector<SatVariable> Permutation::contradictionAntecedents(int decision_leve
   return antecedents;
 }
 
-
 void Permutation::assignPropagate(unsigned int y, unsigned int x, bool rho, int decision_level)
 {
   for (unsigned int i = 0; i < m_size; ++i) {
@@ -272,6 +315,12 @@ void Permutation::undoPropagation(int decision_level)
   }
 }
 
+int Permutation::value(std::pair<unsigned int, unsigned int> assignment) const
+{
+  const Node &node = m_data(assignment.first, assignment.second);
+  return (node.m_assigned) ? static_cast<int>(node.m_value) : 2;
+}
+
 void Permutation::logData() const
 {
   std::stringstream ss;
@@ -288,6 +337,5 @@ void Permutation::logData() const
   }
   spdlog::debug(ss.str());
 }
-
 
 }// namespace usp

@@ -40,6 +40,8 @@ private:
   unsigned int m_cols{ 0 };
 };
 
+class Permutation;
+
 /* Represents a CNF-SAT variable to be used in learned 
  * clauses in the CDCL solver.
  * Each instance corresponds to the Node at position in a   
@@ -49,6 +51,7 @@ private:
 class SatVariable
 {
 public:
+  SatVariable() = default;
   SatVariable(std::pair<unsigned int, unsigned int> position, bool positive, bool rho);
 
   std::pair<unsigned int, unsigned int> m_position{ 0, 0 };
@@ -73,6 +76,12 @@ public:
     UNIT
   };
 
+  // Return the current state of the clause
+  State state() const;
+
+  // Look up values of variables, re-evaluate state and propagate
+  State evaluate(const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, int depth);
+
   friend bool operator==(const SatClause &lhs, const SatClause &rhs);
   friend bool operator<(const SatClause &lhs, const SatClause &rhs);
 
@@ -91,6 +100,7 @@ private:
 class Node
 {
 public:
+  // consider enum class for the node state, instead of two booleans
   bool m_assigned{ false };
   bool m_value{ false };
   int m_decision_level{ -1 };
@@ -128,6 +138,8 @@ public:
   std::vector<SatVariable> antecedents(std::pair<unsigned int, unsigned int> assignment) const;
   // Return the decision level to the Node at (assignment)
   int nodeDecisionLevel(std::pair<unsigned int, unsigned int> assignment) const;
+  // Return the value of the Node at (assignment). 0 if false, 1 if true, 2 if unassigned.
+  int value(std::pair<unsigned int, unsigned int> assignment) const;
   // Debug log the data matrix
   void logData() const;
 
