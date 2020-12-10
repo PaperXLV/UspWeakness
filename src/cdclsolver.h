@@ -15,7 +15,8 @@ bool ClauseUnitPropagation(const std::unique_ptr<Permutation> &rho, const std::u
     loop = false;
     for (auto &satClause : learnedClauses) {
       if (satClause.state() != SatClause::State::SATISFIED) {
-        // evaluate will only modify state, which does not affect ordering of clauses.
+        // Evaluate will only modify state, which does not affect ordering of clauses.
+        // const_cast is therefore safe in this instance.
         SatClause::State state = const_cast<SatClause &>(satClause).evaluate(rho, sigma, depth);
         if (state == SatClause::State::CONFLICTING) {
           return false;
@@ -89,11 +90,10 @@ SatClause CdclConflictAnalysis(const std::unique_ptr<Permutation> &rho, const st
 std::optional<std::pair<Permutation, Permutation>> CdclSolverImpl(const Usp &puzzle, const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, std::set<SatClause> &learnedClauses, int depth)
 {
   // Update clauses
-  /*
   for (auto &satClause : learnedClauses) {
     const_cast<SatClause &>(satClause).evaluate(rho, sigma, depth);
   }
-  */
+
 
   // Check contradiction
   if (rho->checkContradiction() || sigma->checkContradiction()) {

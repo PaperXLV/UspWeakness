@@ -1,4 +1,4 @@
-add_library(usplib usp.cpp)
+add_library(usplib usp.cpp uspgenerator.cpp)
 target_include_directories(usplib PUBLIC /)
 target_link_libraries(
   usplib 

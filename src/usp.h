@@ -40,6 +40,7 @@ private:
   unsigned int m_cols{ 0 };
 };
 
+// Forward declaration
 class Permutation;
 
 /* Represents a CNF-SAT variable to be used in learned 
@@ -58,6 +59,7 @@ public:
   bool m_positive{ true };
   bool m_rho{ true };
 
+  // Comparison operator to hold objects in a set
   friend bool operator==(const SatVariable &lhs, const SatVariable &rhs);
   friend bool operator<(const SatVariable &lhs, const SatVariable &rhs);
 };
@@ -67,6 +69,7 @@ class SatClause
 public:
   void addVariable(SatVariable var);
 
+  // Return the number of variables in the clause
   long unsigned int size() const;
 
   enum class State {
@@ -82,6 +85,7 @@ public:
   // Look up values of variables, re-evaluate state and propagate
   State evaluate(const std::unique_ptr<Permutation> &rho, const std::unique_ptr<Permutation> &sigma, int depth);
 
+  // Comparison operator to hold objects in a set
   friend bool operator==(const SatClause &lhs, const SatClause &rhs);
   friend bool operator<(const SatClause &lhs, const SatClause &rhs);
 
@@ -100,7 +104,7 @@ private:
 class Node
 {
 public:
-  // consider enum class for the node state, instead of two booleans
+  // Consider enum class for the node state, instead of two booleans
   bool m_assigned{ false };
   bool m_value{ false };
   int m_decision_level{ -1 };
@@ -128,9 +132,9 @@ public:
   std::vector<SatVariable> contradictionAntecedents(int decision_level) const;
   // Return all possible assignments by row
   std::vector<unsigned int> possibleAssignments(unsigned int row) const;
-  // Assign element (y, x) to value.
+  // Assign element (y, x) to value
   void assign(unsigned int y, unsigned int x, bool value, int decision_level = -1, std::vector<SatVariable> antecedents = {});
-  // Assigns element (y, x) to true. Performs simple unit propagation.
+  // Assigns element (y, x) to true. Performs simple unit propagation
   void assignPropagate(unsigned int y, unsigned int x, bool rho, int decision_level);
   // Undo all propagation that happened at decision_level or below
   void undoPropagation(int decision_level);
@@ -138,7 +142,7 @@ public:
   std::vector<SatVariable> antecedents(std::pair<unsigned int, unsigned int> assignment) const;
   // Return the decision level to the Node at (assignment)
   int nodeDecisionLevel(std::pair<unsigned int, unsigned int> assignment) const;
-  // Return the value of the Node at (assignment). 0 if false, 1 if true, 2 if unassigned.
+  // Return the value of the Node at (assignment). 0 if false, 1 if true, 2 if unassigned
   int value(std::pair<unsigned int, unsigned int> assignment) const;
   // Debug log the data matrix
   void logData() const;
@@ -155,7 +159,7 @@ class Usp
 public:
   Usp(std::vector<int> data, unsigned int n, unsigned int k);
 
-  // Query a triple of rows to determine if they satisfy the USP condition.
+  // Query a triple of rows to determine if they satisfy the USP condition
   bool query(unsigned int a, unsigned int b, unsigned int c) const;
 
   unsigned int rows() const;

@@ -104,11 +104,8 @@ SatClause::State SatClause::evaluate(const std::unique_ptr<Permutation> &rho, co
   }
   // Unit clause
   else if (assignmentCounter == m_variables.size() - 1) {
-    if (lastUnassigned.m_positive) {
-      (lastUnassigned.m_rho) ? rho->assignPropagate(lastUnassigned.m_position.first, lastUnassigned.m_position.second, true, depth) : sigma->assignPropagate(lastUnassigned.m_position.first, lastUnassigned.m_position.second, false, depth);
-    } else {
-      (lastUnassigned.m_rho) ? rho->assign(lastUnassigned.m_position.first, lastUnassigned.m_position.second, false, depth) : sigma->assign(lastUnassigned.m_position.first, lastUnassigned.m_position.second, false, depth);
-    }
+    (lastUnassigned.m_rho) ? rho->assign(lastUnassigned.m_position.first, lastUnassigned.m_position.second, false, depth) : sigma->assign(lastUnassigned.m_position.first, lastUnassigned.m_position.second, false, depth);
+
     // Set to satisfied, but return unit to tell algorithm to loop propagation again.
     m_state = State::SATISFIED;
     return State::UNIT;
