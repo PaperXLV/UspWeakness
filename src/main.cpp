@@ -18,14 +18,13 @@
 #include <fstream>
 
 static constexpr auto USAGE =
-  R"(Usage: usp
+  R"(Usage: runsolver
 Computes mean and standard deviations of the runtime of a CDCL solver on USP-Weakness. 
 Outputs data into "runtime.csv" in the same directory.  
 
 )";
 
-static constexpr unsigned int trials = 100;
-static constexpr unsigned int maxWidth = 15;
+static constexpr unsigned int trials = 10000;
 static constexpr unsigned int maxHeight = 50;
 
 int main(int argc, const char **argv)
@@ -57,30 +56,34 @@ int main(int argc, const char **argv)
   };
 
   usp::UspGenerator generator;
-  // Iterate all puzzle sizes of (1 to maxHeight, 1 to maxWidth)
-  for (unsigned int i = 1; i < maxWidth + 1; ++i) {
-    for (unsigned int j = 1; j < maxHeight + 1; ++j) {
-      std::vector<double> executionTimes;
-      executionTimes.reserve(trials);
-      for (unsigned int k = 0; k < trials; ++k) {
-        usp::Usp usp = generator.generateRandomPuzzle(j, i);
-        auto startTime = std::chrono::steady_clock::now();
-        auto solution = usp::CdclSolver(usp);
-        auto endTime = std::chrono::steady_clock::now();
-        std::chrono::duration<double> duration = endTime - startTime;
-        executionTimes.push_back(duration.count());
-        // Verify solution
-        if (solution.has_value()) {
-          auto [rho, sigma] = solution.value();
-          if (!usp::VerifyUspWeakness(usp, rho, sigma)) {
-            spdlog::info("CDCL solver failure");
-          }
+  // Generate and write data for (i, j) USPs
+  auto generateData = [&generator, &csvFile, &calculateMeanAndDeviation](unsigned int i, unsigned int j) {
+    std::vector<double> executionTimes;
+    executionTimes.reserve(trials);
+    for (unsigned int k = 0; k < trials; ++k) {
+      usp::Usp usp = generator.generateRandomPuzzle(i, j);
+      auto startTime = std::chrono::steady_clock::now();
+      auto solution = usp::CdclSolver(usp);
+      auto endTime = std::chrono::steady_clock::now();
+      // Time in seconds
+      std::chrono::duration<double> duration = endTime - startTime;
+      executionTimes.push_back(duration.count());
+      // Verify solution
+      if (solution.has_value()) {
+        auto [rho, sigma] = solution.value();
+        if (!usp::VerifyUspWeakness(usp, rho, sigma)) {
+          spdlog::info("CDCL solver failure");
         }
       }
-      // Report mean and standard deviation of runtimes to file
-      auto [mean, deviation] = calculateMeanAndDeviation(executionTimes);
-      csvFile << j << "," << i << "," << mean * 1000 << "," << deviation * 1000 << std::endl;
     }
+    // Report mean and standard deviation of runtimes to file
+    auto [mean, deviation] = calculateMeanAndDeviation(executionTimes);
+    csvFile << i << "," << j << "," << mean * 1000 << "," << deviation * 1000 << std::endl;
+  };
+
+  for (unsigned int i = 1; i < maxHeight + 1; ++i) {
+    generateData(i, 10);
+    generateData(i, 15);
   }
 
   csvFile.close();

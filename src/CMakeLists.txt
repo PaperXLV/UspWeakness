@@ -8,9 +8,9 @@ target_link_libraries(
           CONAN_PKG::fmt
           CONAN_PKG::spdlog)
 
-add_executable(usp main.cpp)
+add_executable(runsolver main.cpp)
 target_link_libraries(
-  usp
+  runsolver
   PRIVATE usplib
           project_options
           project_warnings
