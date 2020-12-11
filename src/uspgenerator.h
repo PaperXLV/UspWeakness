@@ -17,7 +17,7 @@ public:
   Usp generateRandomPuzzle(unsigned int n, unsigned int k);
 
 private:
-  std::default_random_engine m_generator;
+  std::mt19937 m_generator;
   std::uniform_int_distribution<int> m_distribution{ 1, 3 };
 };
 
