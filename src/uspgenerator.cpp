@@ -6,7 +6,7 @@ namespace usp {
 
 UspGenerator::UspGenerator()
 {
-  m_generator.seed(static_cast<long unsigned int>(std::chrono::steady_clock::now().time_since_epoch().count()));
+  m_generator.seed(static_cast<std::mt19937::result_type>(std::chrono::steady_clock::now().time_since_epoch().count()));
 }
 
 Usp UspGenerator::generateRandomPuzzle(unsigned int n, unsigned int k)
